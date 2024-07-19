@@ -1,0 +1,136 @@
+{
+  "objects": [
+    {
+      "color": "gray",
+      "x": 380,
+      "y": 185,
+      "width": 20,
+      "height": 130
+    },
+    {
+      "color": "gray",
+      "x": 600,
+      "y": 185,
+      "width": 20,
+      "height": 130
+    },
+    {
+      "color": "gray",
+      "x": 380,
+      "y": 120,
+      "width": 180,
+      "height": 20
+    },
+    {
+      "color": "gray",
+      "x": 440,
+      "y": 360,
+      "width": 180,
+      "height": 20
+    },
+    {
+      "color": "gray",
+      "x": 280,
+      "y": 100,
+      "width": 20,
+      "height": 200
+    },
+    {
+      "color": "gray",
+      "x": 700,
+      "y": 200,
+      "width": 20,
+      "height": 200
+    },
+    {
+      "color": "gray",
+      "x": 300,
+      "y": 400,
+      "width": 80,
+      "height": 20
+    },
+    {
+      "color": "gray",
+      "x": 620,
+      "y": 80,
+      "width": 80,
+      "height": 20
+    },
+    {
+      "color": "gray",
+      "x": 50,
+      "y": 180,
+      "width": 150,
+      "height": 20
+    },
+    {
+      "color": "gray",
+      "x": 180,
+      "y": 50,
+      "width": 20,
+      "height": 80
+    },
+    {
+      "color": "gray",
+      "x": 800,
+      "y": 300,
+      "width": 150,
+      "height": 20
+    },
+    {
+      "color": "gray",
+      "x": 800,
+      "y": 370,
+      "width": 20,
+      "height": 80
+    },
+    {
+      "color": "gray",
+      "x": 50,
+      "y": 300,
+      "width": 150,
+      "height": 20
+    },
+    {
+      "color": "gray",
+      "x": 180,
+      "y": 370,
+      "width": 20,
+      "height": 80
+    },
+    {
+      "color": "gray",
+      "x": 800,
+      "y": 50,
+      "width": 20,
+      "height": 80
+    },
+    {
+      "color": "gray",
+      "x": 800,
+      "y": 180,
+      "width": 150,
+      "height": 20
+    }    
+  ],
+
+  "enemy": [ 
+    {
+      "x": 470,
+      "y": 470,
+      "speed": 2,
+      "width": 20,
+      "height": 20,
+      "image": "enemyImage",
+      "aroundX": false,
+      "aroundY": false,
+      "target": {
+        "x": "getRandom(480)",
+        "y": "getRandom(480)",
+        "width": 20,
+        "height": 20,
+        "color": "blue"
+      }
+    }
+  ]
+}
