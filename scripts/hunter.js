@@ -94,15 +94,8 @@ document.addEventListener("DOMContentLoaded", (event) => {
         height: 20,
         color: "blue",
       },
-      bullet: {
-        created: false,
-        color: "red",
-        width: 5,
-        height: 5,
-        x: 470,
-        y: 470,
-        speed: 10,
-      }
+      bulletSpeed: 5,
+      bullet: [],
     });
     enemyArray[i].x -= enemyArray[i].width * i;   
   }
@@ -113,7 +106,7 @@ document.addEventListener("DOMContentLoaded", (event) => {
 
   async function getObjects() {
     let data;
-    let response = await fetch('./scripts/map.json');
+    let response = await fetch('./scripts/map1.json');
     if(response.ok) {
       data = await response.json();    
       objects = data.objects;
@@ -141,36 +134,45 @@ document.addEventListener("DOMContentLoaded", (event) => {
 
   ///////////////
 
-  function lineLine(x1, y1, x2, y2, x3, y3, x4, y4) {
+  function checkLineIntersection(x1, y1, x2, y2, x3, y3, x4, y4) {
 
     let A = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / ((y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1));
     let B = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / ((y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1));
   
     if (A >= 0 && A <= 1 && B >= 0 && B <= 1) {
       return true;
-    } else {
-      return false;
     }
   }
 
   function checkLineRectangleCollision(x1, y1, x2, y2, obj) {
     
-    let left = lineLine(x1, y1, x2, y2, obj.x, obj.y, obj.x, obj.y + obj.height);
-    let right = lineLine(x1, y1, x2, y2, obj.x + obj.width, obj.y, obj.x + obj.width, obj.y + obj.height);
-    let top = lineLine(x1, y1, x2, y2, obj.x, obj.y, obj.x + obj.width, obj.y);
-    let bottom = lineLine(x1, y1, x2, y2, obj.x, obj.y + obj.height, obj.x + obj.width, obj.y + obj.height);
+    let left = checkLineIntersection(x1, y1, x2, y2, obj.x, obj.y, obj.x, obj.y + obj.height);
+    let right = checkLineIntersection(x1, y1, x2, y2, obj.x + obj.width, obj.y, obj.x + obj.width, obj.y + obj.height);
+    let top = checkLineIntersection(x1, y1, x2, y2, obj.x, obj.y, obj.x + obj.width, obj.y);
+    let bottom = checkLineIntersection(x1, y1, x2, y2, obj.x, obj.y + obj.height, obj.x + obj.width, obj.y + obj.height);
 
     if (left || right || top || bottom) {
       return true;
-    } else {
-      return false;
     }
   }
 
 //////////////////////
 
+  function attackEnemy() {
+    for(let i = 0; i < enemyArray.length; i++) {
+      if(getDistance(enemyArray[i], playerHero) < 30) {
+        // console.log('attack');
+        // delete enemyArray[i];
+      }
+    }
+  }
+
   function onPressKey(event) {
-    pressed[event.code] = true;   
+    pressed[event.code] = true;
+    
+    if(event.code === 'Space') {
+      attackEnemy();
+    }
   }
 
   function onReleasingKey(event) {
@@ -428,17 +430,36 @@ document.addEventListener("DOMContentLoaded", (event) => {
     return Math.sqrt(Math.pow((obj1.x - obj2.x), 2) + Math.pow((obj1.y - obj2.y), 2))
   }
 
+  function getAngle(obj1, obj2) {
+    let x =(obj1.x + obj1.width / 2) - (obj2.x + obj2.width / 2);
+    let y = (obj1.y + obj1.height / 2) - (obj2.y + obj2.height / 2);
+    let angle;
+
+    if(x === 0) {
+      return (y < 0) ? angle = 270 : angle = 90;
+    } 
+    if(y === 0) {
+      return (x < 0) ? angle = 0 : angle = 180;
+    }
+    angle = Math.atan(y / x) * 180 / Math.PI;
+    if(x > 0) {
+      angle += 180;
+    } else if(y > 0) {
+      angle += 360;
+    }     
+    angle = 360 - angle;
+
+    return angle;
+  }
+
   function findTarget() {
     let beginLineX = playerHero.x + playerHero.width / 2;
     let beginLineY = playerHero.y + playerHero.height / 2;
-    let endLineX;
-    let endLineY;
-    let angle;
-    let targetFound = false;
 
     for(const enemy of enemyArray) {
-      endLineX = enemy.x + enemy.width / 2;
-      endLineY = enemy.y + enemy.height / 2;
+      let angle = getAngle(enemy, playerHero);
+      let endLineX = enemy.x + enemy.width / 2;
+      let endLineY = enemy.y + enemy.height / 2;
 
       canvasContext.beginPath();
       canvasContext.moveTo(beginLineX, beginLineY);
@@ -446,31 +467,40 @@ document.addEventListener("DOMContentLoaded", (event) => {
       canvasContext.closePath();
       canvasContext.stroke();
 
-      if(getDistance(enemy, playerHero) < 200) {
-        angle = Math.atan((beginLineY - endLineY) / (beginLineX - endLineX)) * (180 / Math.PI);
+      if(getDistance(enemy, playerHero) < 300 && !enemy.hunting) {
+        // if(((enemy.x > enemy.prevX && enemy.y === enemy.prevY) && (angle <= 22.5 || angle > 337.5))
+        //   || ((enemy.x > enemy.prevX && enemy.y < enemy.prevY) && (angle <= 67.5 && angle > 22.5))
+        //   || ((enemy.x === enemy.prevX && enemy.y < enemy.prevY) && (angle <= 112.5 && angle > 67.5))
+        //   || ((enemy.x < enemy.prevX && enemy.y < enemy.prevY) && (angle <= 157.5 && angle > 112.5))
+        //   || ((enemy.x < enemy.prevX && enemy.y === enemy.prevY) && (angle <= 202.5 && angle > 157.5))
+        //   || ((enemy.x < enemy.prevX && enemy.y > enemy.prevY) && (angle <= 247.5 && angle > 202.5))
+        //   || ((enemy.x === enemy.prevX && enemy.y > enemy.prevY) && (angle <= 292.5 && angle > 247.5))
+        //   || ((enemy.x > enemy.prevX && enemy.y > enemy.prevY) && (angle <= 337.5 && angle > 292.5))
+        // ) {
+        //   enemy.hunting = true;
+        // }
 
-        // console.log(angle);
-
-        targetFound = true;
-      } 
-
-      for(let wall of objects) {
-        if(checkLineRectangleCollision(beginLineX, beginLineY, endLineX, endLineY, wall)) {
-          targetFound = false;
+        if(((enemy.x > enemy.prevX && enemy.y === enemy.prevY) && (angle <= 45 || angle > 315))
+          || ((enemy.x > enemy.prevX && enemy.y < enemy.prevY) && (angle <= 90 && angle > 0))
+          || ((enemy.x === enemy.prevX && enemy.y < enemy.prevY) && (angle <= 135 && angle > 45))
+          || ((enemy.x < enemy.prevX && enemy.y < enemy.prevY) && (angle <= 180 && angle > 90))
+          || ((enemy.x < enemy.prevX && enemy.y === enemy.prevY) && (angle <= 225 && angle > 135))
+          || ((enemy.x < enemy.prevX && enemy.y > enemy.prevY) && (angle <= 270 && angle > 180))
+          || ((enemy.x === enemy.prevX && enemy.y > enemy.prevY) && (angle <= 315 && angle > 225))
+          || ((enemy.x > enemy.prevX && enemy.y > enemy.prevY) && (angle <= 360 && angle > 270))
+        ) {
+          enemy.hunting = true;
         } 
       } 
 
-      if(targetFound) {        
-        enemy.hunting = true;
-        enemy.speed = 2;
-        enemy.bullet.created = true;
-      } else {
-        enemy.hunting = false;
-        enemy.speed = 1;
+      if(enemy.hunting) {
+        for(let wall of objects) {
+          if(checkLineRectangleCollision(beginLineX, beginLineY, endLineX, endLineY, wall)) {
+            enemy.hunting = false;
+          } 
+        }
       }
     }
-
-    return targetFound;
   }
 
   function drawPersonage(obj) {
@@ -482,17 +512,29 @@ document.addEventListener("DOMContentLoaded", (event) => {
     canvasContext.fillRect(obj.x, obj.y, obj.width, obj.height);
   }
 
-  function shot(enemy) {
-    // for(const enemy of enemyArray) {
-      // enemy.bullet.x =  enemy.x + enemy.width / 2;
-      // enemy.bullet.y = enemy.y + enemy.height / 2;
-    // }
-      let distance = getDistance(enemy.bullet, enemy.target)
+  function shot(enemy) {  
+    let distance = getDistance(enemy, enemy.target);
+    // let x = enemy.x + enemy.width / 2;
+    // let y = enemy.y + enemy.height / 2;
+    // let dX = (enemy.target.x - enemy.x) * enemy.bulletSpeed / distance;
+    // let dY = (enemy.target.y - enemy.y) * enemy.bulletSpeed / distance;
 
-      enemy.bullet.x += (enemy.target.x - enemy.bullet.x) * enemy.bullet.speed / distance;
-      enemy.bullet.y += (enemy.target.y - enemy.bullet.y) * enemy.bullet.speed / distance;
+    if(enemy.bullet.length === 0) {
+      enemy.bullet.push({
+        color: "red",
+        width: 5,
+        height: 5,
+        x: enemy.x + enemy.width / 2,
+        y: enemy.y + enemy.height / 2,
+        dX: (enemy.target.x - enemy.x) * enemy.bulletSpeed / distance,
+        dY: (enemy.target.y - enemy.y) * enemy.bulletSpeed / distance,
+      });
+    }
 
-      drawObject(enemy.bullet);
+    if(enemy.bullet.length != 0) {
+      enemy.bullet[0].x += enemy.bullet[0].dX;
+      enemy.bullet[0].y += enemy.bullet[0].dY;
+    }
   }
 
   function play() {
@@ -501,6 +543,7 @@ document.addEventListener("DOMContentLoaded", (event) => {
     drawBackground();
     drawPersonage(playerHero);
     playerHeroMove();
+    enemyMove(); 
 
     for(const wall of objects) {
       drawObject(wall);
@@ -509,34 +552,62 @@ document.addEventListener("DOMContentLoaded", (event) => {
       drawPersonage(enemy);    
       drawObject(enemy.target);
       
-      if(checkRectangleCollision(enemy, enemy.target) && !enemy.hunting) {
+      findTarget()
+
+      if(enemy.hunting) {
+        enemy.speed = 2;
+        enemy.target.x = playerHero.x;
+        enemy.target.y = playerHero.y;
+        shot(enemy);
+      } else if(checkRectangleCollision(enemy, enemy.target)) {
+        enemy.speed = 1;
         enemy.target.x = getRandom(480);
         enemy.target.y = getRandom(480);
       }
 
-      if(findTarget()) {
-        if(enemy.bullet.created) {
-          enemy.target.x = playerHero.x;
-          enemy.target.y = playerHero.y; 
-          enemy.bullet.x =  enemy.x + enemy.width / 2;
-          enemy.bullet.y = enemy.y + enemy.height / 2;
-          enemy.bullet.created = false;
-        }      
+      if(enemy.bullet.length != 0) {
+        drawObject(enemy.bullet[0]);
+        shot(enemy);
+
+        if(checkRectangleCollision(enemy.bullet[0], playerHero)) {
+          playerHero.HP--;
+          enemy.bullet.pop();
+        } 
       }
-      shot(enemy); 
-      
+
+      if(enemy.bullet.length != 0) {
+        if(enemy.bullet[0].x < 0 
+          || enemy.bullet[0].y < 0
+          || enemy.bullet[0].x > map.width
+          ||enemy.bullet[0].y > map.height
+        ) {
+          enemy.bullet.pop();
+        }
+      }
+
+      for(const wall of objects) {
+        if(enemy.bullet.length != 0) {
+          if(checkRectangleCollision(wall, enemy.bullet[0])) {
+            enemy.bullet.pop();
+          }
+        }
+      }
+    } 
+    
+    if(playerHero.HP === 0) {
+      console.log('GAME OVER');
     }
-
-    enemyMove();   
-
+  
     requestAnimationFrame(play);
   }
 
   function updTarget() {
     for(const enemy of enemyArray) {
-      enemy.target.x = getRandom(480);
-      enemy.target.y = getRandom(480);
-    }
+      if(!enemy.hunting) {
+        enemy.target.x = getRandom(480);
+        enemy.target.y = getRandom(480);
+      }
+    }    
   }
 
   function initEventsListeners() {
@@ -553,4 +624,3 @@ document.addEventListener("DOMContentLoaded", (event) => {
 });
 
 
-//////////////////////
